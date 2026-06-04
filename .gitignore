@@ -1,0 +1,13 @@
+# checkpoints & logs (large / machine-specific — synced via Drive, not git)
+out/
+*.pt
+*.log
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# os
+.DS_Store

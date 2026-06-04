@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LLM from scratch — console</title>
+<style>
+  :root{
+    --bg:#0f1116; --panel:#181b22; --panel2:#1f232c; --border:#2a2f3a;
+    --text:#e6e6e6; --muted:#8b949e; --accent:#6ea8fe; --green:#3fb950; --red:#f85149; --amber:#d29922;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:13px}
+  .pills{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+  .pill b{color:var(--text);font-weight:600}
+  .pill.ok{border-color:#1f4d2b;color:#7ee2a0}
+  .pill.warn{border-color:#5a4a14;color:#e3c156}
+  main{max-width:1080px;margin:0 auto;padding:24px;display:grid;gap:20px;grid-template-columns:1fr;}
+  @media(min-width:920px){main{grid-template-columns:3fr 2fr}.col-span{grid-column:1/-1}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .card h2{margin:0 0 14px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;color:var(--muted);font-weight:500}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+  textarea,input[type=number]{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:13px}
+  textarea{min-height:64px;resize:vertical}
+  .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .row > div{flex:1;min-width:90px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel2);color:var(--muted);border:0;padding:7px 16px;font-size:13px;cursor:pointer;font-weight:600}
+  .seg button.active{background:var(--accent);color:#08111f}
+  .checkbox{display:flex;align-items:center;gap:7px;margin-top:22px}
+  .checkbox input{width:16px;height:16px;accent-color:var(--accent)}
+  button.go{margin-top:14px;background:var(--accent);color:#08111f;border:0;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer}
+  button.go:disabled{opacity:.5;cursor:default}
+  button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+  pre.out{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;white-space:pre-wrap;word-break:break-word;font-family:var(--mono);font-size:13px;margin:12px 0 0;max-height:340px;overflow:auto}
+  pre.out:empty{display:none}
+  .msg{font-size:12.5px;margin-top:8px;min-height:1em}
+  .msg.err{color:var(--red)} .msg.warn{color:var(--amber)} .msg.ok{color:var(--green)}
+  .range-val{color:var(--text);font-family:var(--mono)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .badge{display:inline-block;font-family:var(--mono);font-size:13px;padding:5px 12px;border-radius:8px;font-weight:600}
+  .badge.green{background:#0f2e1a;color:var(--green);border:1px solid #1f4d2b}
+  .badge.red{background:#3a1413;color:var(--red);border:1px solid #5a1f1d}
+  details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:12px}
+  .hint{color:var(--muted);font-size:12px;margin-top:10px}
+  code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;animation:s .7s linear infinite;vertical-align:-1px}
+  @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 LLM from scratch <span class="sub">— top-down console</span></h1>
+  <div class="pills">
+    <span class="pill" id="pill-device">device <b>…</b></span>
+    <span class="pill" id="pill-ckpt">checkpoint <b>…</b></span>
+    <span class="pill" id="pill-train" style="display:none">⚙︎ training…</span>
+  </div>
+</header>
+
+<main>
+  <!-- GENERATE -->
+  <section class="card col-span">
+    <h2>Generate <span class="tag">run the model — switch between the reference and YOUR code</span></h2>
+
+    <div style="margin-bottom:12px">
+      <label>implementation</label>
+      <div class="seg" id="impl">
+        <button data-impl="reference" class="active">reference</button>
+        <button data-impl="student">student (your code)</button>
+      </div>
+    </div>
+
+    <label for="prompt">prompt</label>
+    <textarea id="prompt">The </textarea>
+
+    <div class="row">
+      <div>
+        <label>tokens</label>
+        <input type="number" id="tokens" value="240" min="1" max="1000">
+      </div>
+      <div>
+        <label>temperature <span class="range-val" id="tempv">0.80</span></label>
+        <input type="range" id="temperature" min="0.05" max="2" step="0.05" value="0.8">
+      </div>
+      <div>
+        <label>top-k <span style="opacity:.6">(blank=off)</span></label>
+        <input type="number" id="top_k" placeholder="off" min="1">
+      </div>
+      <div>
+        <label>top-p <span style="opacity:.6">(blank=off)</span></label>
+        <input type="number" id="top_p" placeholder="off" min="0.01" max="0.99" step="0.05">
+      </div>
+      <div class="checkbox">
+        <input type="checkbox" id="greedy"><label for="greedy" style="margin:0">greedy</label>
+      </div>
+    </div>
+
+    <button class="go" id="gen-btn">Generate</button>
+    <div class="msg" id="gen-msg"></div>
+    <pre class="out" id="gen-out"></pre>
+    <div class="hint">Tip: pick <b>student</b>, and until you implement Milestone 1 you'll get a friendly "not implemented" notice. After your tests pass, the same button shows your code generating text. Edits to <code>student/sampling.py</code> are picked up live.</div>
+  </section>
+
+  <!-- TESTS -->
+  <section class="card">
+    <h2>Tests <span class="tag">Milestone 1</span></h2>
+    <button class="go ghost" id="test-btn">Run Milestone 1 tests</button>
+    <div style="margin-top:12px" id="test-badge"></div>
+    <details id="test-details" style="display:none">
+      <summary>full pytest output</summary>
+      <pre class="out" id="test-out"></pre>
+    </details>
+    <div class="hint">Same as <code>pytest tests/test_sampling.py</code>. Goal: turn all 24 green.</div>
+  </section>
+
+  <!-- TRAIN -->
+  <section class="card">
+    <h2>Train <span class="tag">reference model → out/ckpt.pt</span></h2>
+    <div class="row" style="margin-top:0">
+      <div style="flex:0 0 120px">
+        <label>iters</label>
+        <input type="number" id="iters" value="2500" min="50" step="500">
+      </div>
+      <div style="align-self:end">
+        <button class="go" id="train-btn">Start training</button>
+      </div>
+    </div>
+    <div class="msg" id="train-msg"></div>
+    <pre class="out" id="train-out"></pre>
+    <div class="hint">More iters → nicer samples. ~2500 is plenty for this tiny corpus.</div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let impl = "reference";
+
+$("impl").addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") return;
+  impl = e.target.dataset.impl;
+  [...$("impl").children].forEach(b => b.classList.toggle("active", b === e.target));
+});
+$("temperature").addEventListener("input", e => $("tempv").textContent = (+e.target.value).toFixed(2));
+function toggleGreedy(){
+  const g = $("greedy").checked;
+  ["temperature","top_k","top_p"].forEach(id => $(id).disabled = g);
+}
+$("greedy").addEventListener("change", toggleGreedy);
+
+async function refreshStatus(){
+  try{
+    const s = await (await fetch("/api/status")).json();
+    $("pill-device").innerHTML = `device <b>${s.device}</b>`;
+    const ok = s.checkpoint;
+    $("pill-ckpt").innerHTML = `checkpoint <b>${ok ? "ready" : "none"}</b>`;
+    $("pill-ckpt").className = "pill " + (ok ? "ok" : "warn");
+    $("pill-train").style.display = s.training ? "inline-block" : "none";
+  }catch(e){}
+}
+
+$("gen-btn").addEventListener("click", async () => {
+  const btn = $("gen-btn"); btn.disabled = true; btn.textContent = "Generating…";
+  $("gen-msg").textContent = ""; $("gen-msg").className = "msg";
+  const body = {
+    impl, prompt: $("prompt").value,
+    tokens: +$("tokens").value, temperature: +$("temperature").value,
+    top_k: $("top_k").value || null, top_p: $("top_p").value || null,
+    greedy: $("greedy").checked,
+  };
+  try{
+    const r = await (await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+    if(r.ok){
+      $("gen-out").textContent = r.text;
+      if(r.warning){ $("gen-msg").textContent = r.warning; $("gen-msg").className = "msg warn"; }
+      else { $("gen-msg").textContent = `ran with the ${r.impl} implementation`; $("gen-msg").className = "msg ok"; }
+    } else {
+      $("gen-msg").textContent = r.error; $("gen-msg").className = "msg err";
+    }
+  }catch(e){ $("gen-msg").textContent = String(e); $("gen-msg").className = "msg err"; }
+  btn.disabled = false; btn.textContent = "Generate";
+});
+
+$("test-btn").addEventListener("click", async () => {
+  const btn = $("test-btn"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> running…';
+  try{
+    const r = await (await fetch("/api/test",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"})).json();
+    if(r.ok){
+      const pass = r.failed === 0 && r.passed > 0;
+      $("test-badge").innerHTML = `<span class="badge ${pass?"green":"red"}">${pass?"✓":"✗"} ${r.passed} passed, ${r.failed} failed</span>`;
+      $("test-out").textContent = r.output;
+      $("test-details").style.display = "block";
+    } else {
+      $("test-badge").innerHTML = `<span class="badge red">error</span>`;
+      $("test-out").textContent = r.error || ""; $("test-details").style.display = "block";
+    }
+  }catch(e){ $("test-badge").innerHTML = `<span class="badge red">${e}</span>`; }
+  btn.disabled = false; btn.textContent = "Run Milestone 1 tests";
+});
+
+let pollTimer = null;
+async function pollTrain(){
+  const r = await (await fetch("/api/train/status")).json();
+  $("train-out").textContent = r.log || "";
+  $("train-out").scrollTop = $("train-out").scrollHeight;
+  if(r.running){
+    $("train-msg").innerHTML = '<span class="spin"></span> training…'; $("train-msg").className = "msg";
+  } else {
+    clearInterval(pollTimer); pollTimer = null;
+    $("train-btn").disabled = false; $("train-btn").textContent = "Start training";
+    $("train-msg").textContent = r.returncode === 0 ? "done — checkpoint saved" : (r.returncode==null?"":"exited with code "+r.returncode);
+    $("train-msg").className = "msg " + (r.returncode===0?"ok":"err");
+    refreshStatus();
+  }
+}
+$("train-btn").addEventListener("click", async () => {
+  const btn = $("train-btn"); btn.disabled = true; btn.textContent = "starting…";
+  const r = await (await fetch("/api/train/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({iters:+$("iters").value})})).json();
+  if(!r.ok){ $("train-msg").textContent = r.error; $("train-msg").className="msg err"; btn.disabled=false; btn.textContent="Start training"; return; }
+  if(!pollTimer) pollTimer = setInterval(pollTrain, 1200);
+  pollTrain();
+});
+
+refreshStatus();
+setInterval(refreshStatus, 5000);
+// if a training run is already in progress (e.g., started elsewhere), attach to it
+fetch("/api/train/status").then(r=>r.json()).then(r=>{ if(r.running && !pollTimer){ $("train-btn").disabled=true; pollTimer=setInterval(pollTrain,1200); pollTrain(); }});
+</script>
+</body>
+</html>
