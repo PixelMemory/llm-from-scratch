@@ -7,20 +7,17 @@
 the ~11M-param model on tiny-shakespeare, and save the checkpoint to the user's
 Google Drive at `MyDrive/llm-from-scratch/ckpt.pt`.
 
-**Repo:** `https://github.com/PixelMemory/llm-from-scratch` (private)
+**Repo:** `https://github.com/PixelMemory/llm-from-scratch` (public)
 **Open-in-Colab:** `https://colab.research.google.com/github/PixelMemory/llm-from-scratch/blob/main/colab/train_a100.ipynb`
 
 ---
 
-## Task 0 — Prerequisites  ·  Status: `[TODO]`
+## Task 0 — Prerequisites  ·  Status: `[DONE]`
 - Confirm the browser is signed into the user's Google account (Colab loads
   without a login prompt). If not → `[BLOCKED]`, stop.
-- Repo is **private**, so confirm a Colab Secret named `GITHUB_TOKEN` exists
-  (Colab left sidebar → 🔑 Secrets), with "Notebook access" enabled. If missing,
-  the user must create a GitHub token (scope `repo`) and add it — `[BLOCKED]`
-  with that note if absent.
-  *(If the repo is later made public, this task is N/A — skip it.)*
-- **Acceptance:** logged-in Colab session confirmed; `GITHUB_TOKEN` present (or repo public).
+- Repo is now **public** — **no GitHub token or Colab Secret needed.** Skip any
+  token setup; the clone and the Open-in-Colab link work without authorization.
+- **Acceptance:** logged-in Colab session confirmed; repo is public (no token).
 
 ## Task 1 — Open the training notebook  ·  Status: `[TODO]`
 - Navigate to the **Open-in-Colab** link above. If Colab asks to authorize
@@ -99,3 +96,14 @@ shutil.copy("out/train_gpu.log", "/content/drive/MyDrive/llm-from-scratch/train_
 - checkpoint: MyDrive/llm-from-scratch/ckpt.pt (12.3 MB)
 - notes: Drive auth needed one click; otherwise clean.
 -->
+
+### 2026-06-05 — run by Codex
+- Status: blocked at Task 0.
+- Colab account: confirmed signed in to the user's Google account; Colab loaded without a login prompt.
+- GitHub notebook link: failed with Colab "Notebook not found" / GitHub API 404 because the repo is private and Colab is not authorized for it.
+- Colab Secrets: opened a blank notebook and checked the Secrets pane; it reported "No secrets saved", so `GITHUB_TOKEN` is absent.
+- Blocker: the private repo requires a Colab Secret named `GITHUB_TOKEN` with notebook access enabled. Per protocol, stopped here rather than guessing past the missing credential.
+
+### 2026-06-05 — blocker resolved (repo made public)
+- `PixelMemory/llm-from-scratch` is now **public**, so the Task 0 blocker is cleared: no `GITHUB_TOKEN` and no Colab↔GitHub authorization are required.
+- Codex: please resume from **Task 1** — the Open-in-Colab link now opens directly, and the clone cell works token-free.
