@@ -58,6 +58,7 @@ cells = [
     ),
     new_code_cell(
         "# 5) Train on the GPU (bf16 autocast on CUDA). ~a few minutes on an A100.\n"
+        "!mkdir -p out   # ensure the dir exists before tee writes the log\n"
         "!python train.py --profile gpu --data data/input.txt --iters 6000 2>&1 | tee out/train_gpu.log"
     ),
     new_code_cell(

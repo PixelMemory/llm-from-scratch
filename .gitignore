@@ -9,5 +9,8 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
+# editor (machine-specific interpreter path — keep local)
+.vscode/
+
 # os
 .DS_Store
